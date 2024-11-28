@@ -1,6 +1,6 @@
 {
-    "short_name":"Demo",
-    "name":"Demo PWA24",
+    "short_name":"App_Jehu_Victor",
+    "name":"App_Jehu_Victor",
     "start_url":"index.html",
     "background_color":"#3498db",
     "display":"standalone",
