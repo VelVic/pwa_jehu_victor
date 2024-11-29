@@ -5,7 +5,6 @@ const DYNAMIC_CACHE = 'dynamic-v1';
 const INMUTABLE_CACHE = 'inmutable-v1';
 
 const APP_SHELL = [
-    /* '/', */
     'index.html',
     'css/style.css',
     'img/pwa.jpg',
@@ -40,12 +39,11 @@ self.addEventListener('install', e => {
     e.waitUntil(Promise.all([cacheStatic, cacheInmutable]));
 });
 
-
 self.addEventListener('activate', e => {
     const respuesta = caches.keys().then(keys => {
         return Promise.all(
             keys.map(key => {
-                if (key !== STATIC_CACHE && key.includes('static')) {
+                if (key !== STATIC_CACHE && key !== DYNAMIC_CACHE && key.includes('static')) {
                     return caches.delete(key);
                 }
             })
@@ -54,21 +52,30 @@ self.addEventListener('activate', e => {
 
     e.waitUntil(respuesta);
 });
-//___________  Cache con Network 2a parte
 
-self.addEventListener('fetch', e=>{
-    const respuesta =caches.match(e.request).then(res =>{
-if(res){
-    return res;
-}else {
-    return fetch(e.request).then(newRes => {
-
-     return actualizarCacheDinamico(DYNAMIC_CACHE,e.request,newRes);
-    
-        
-    });
+// Función para actualizar la caché dinámica
+function actualizarCacheDinamico(cacheName, req, res) {
+    if (res.ok) {
+        caches.open(cacheName).then(cache => {
+            cache.put(req, res);
+        });
+    }
+    return res.clone();
 }
 
-});
-e.respondWith(respuesta);
+// Fetch con respuesta offline
+self.addEventListener('fetch', e => {
+    const respuesta = caches.match(e.request).then(res => {
+        if (res) {
+            return res;
+        } else {
+            return fetch(e.request).then(newRes => {
+                return actualizarCacheDinamico(DYNAMIC_CACHE, e.request, newRes);
+            }).catch(() => {
+                return caches.match('/offline.html');  // Respuesta cuando no haya conexión
+            });
+        }
+    });
+
+    e.respondWith(respuesta);
 });
